@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+    <title></title>
+    <script src="js/mui.min.js"></script>
+    <link href="css/mui.min.css" rel="stylesheet"/>
+    <script type="text/javascript" charset="utf-8">
+      	mui.init();
+    </script>
+    <style>
+    	.content{
+    		padding-top: 70px;
+    	}
+    	.box{
+    		width: 100%;
+    		height: 50vh;
+    		margin-bottom: 10px ;
+    		border: 3px dotted darkblue;
+    		color: red;	
+    		font-size: 24px;
+    		line-height: 32px;
+    		text-align: center;
+    	}
+    	#bcid{
+    		width: 100%;
+    		height: 360px;
+    		display:block;
+    		background: blue;
+    	}
+    </style>
+    <script type="text/javascript">
+    	
+    	document.addEventListener('plusready',function(){
+    		console.log(plus)
+    		device();
+    		getNetWork();
+    		getAcc();
+    		getGps();
+    		getAuthService();
+    		getshare();
+    	})
+    	var shares=null
+    	function getshare(){
+    		//获取分享服务
+    		plus.share.getServices(function(s){
+				shares = s;
+				console.log(JSON.stringify(shares))
+			}, function(e){
+				alert("获取分享服务列表失败："+e.message);
+			});
+    	}
+    	function startShare(id){
+    		//发送分享
+    		var s=null
+    		for(var i in shares){
+    			if(shares[i].id==id){
+    				s=shares[i];
+    				if(s.authenticated){
+						s.send({content:"Hello"}, function(){
+							alert("分享成功！");
+						},function(e){
+							alert("分享失败："+e.message);
+						});
+					}else{
+						s.authorize(shareMessage, function(e){
+							alert("未进行认证");
+						});
+					}
+    				
+    		}
+    	}
+    		
+    }
+    	function sendShare(){
+    		//点击通过系统组件发送分享
+    		plus.share.sendWithSystem({content:'分享内容',href:'http://www.dcloud.io/'}, function(){
+					console.log('分享成功');
+				}, function(e){
+					console.log('分享失败：'+JSON.stringify(e));
+				});
+    	}
+    	var auths=null
+    	function getAuthService(){
+    		//获取登录授权认证服务列表
+    		plus.oauth.getServices(
+    			(services)=>{
+    				auths=services
+    				console.log(JSON.stringify(auths))
+    			},
+    			(e)=>{
+    				console.log(e.message)
+    			}
+    		)
+    	}
+    	function login(id){
+    		//点击按钮以后第三方应用登录
+    		var s=null
+    		for(var i in auths){
+    			if(auths[i].id==id){
+    				s=auths[i];
+    				console.log(JSON.stringify(s))
+    				if ( !s.authResult ) {
+						s.login( function(e){
+							alert( "登录认证成功！" );
+							s.getUserInfo( function(e){
+									alert( "获取用户信息成功："+JSON.stringify(s.userInfo) );
+								}, function(e){
+									alert( "获取用户信息失败："+e.message+" - "+e.code );
+								} );
+						}, function(e){
+							alert( "登录认证失败！" );
+						} );
+					}else{
+						alert( "已经登录认证！" );
+					}
+    			}
+    		}
+    	}
+    	function startScan(){
+    		//点击开始扫描二维码
+    		alert("开始扫描二维码");
+    		  var scan=new plus.barcode.Barcode('bcid');
+    		  var bcid=document.getElementById('bcid');
+    		  //开始扫描
+    		  scan.start();
+    		  
+    		  function onmarked( type, result ) {
+				var text = '未知: ';
+				switch(type){
+					case plus.barcode.QR:
+					text = 'QR: ';
+					break;
+					case plus.barcode.EAN13:
+					text = 'EAN13: ';
+					break;
+					case plus.barcode.EAN8:
+					text = 'EAN8: ';
+					break;
+				}
+				alert( text+result );
+				bicd.style.display="none";
+				scan.close();
+				location.href=result;
+			}
+    	}
+    	function takePhoto(){
+    		//点击开始拍照
+    		alert("开始拍照")
+    		var cmr = plus.camera.getCamera(); //获取摄像头对象
+			var res = cmr.supportedImageResolutions[0];
+			var fmt = cmr.supportedImageFormats[0];
+			console.log("Resolution: "+res+", Format: "+fmt);
+			cmr.captureImage( function( path ){
+					plus.io.resolveLocalFileSystemURL(
+						path,function(entry){
+							alert( "Capture image success: " + path );  
+							var img=document.getElementById("img")
+							img.src=entry.toLocalURL()
+						
+					},function(e){
+						outLine("读取拍照文件错误："+e.message)
+					})
+					
+				},
+				function( error ) {
+					alert( "拍照失败 " + error.message );
+				},
+				{resolution:res,format:fmt}
+	);
+    	}
+    	function getGps(){
+    		//获取设备的gps信息
+    		var geo=document.getElementById("geo")
+    		plus.geolocation.getCurrentPosition(function(p){
+					geo.innerHTML="经度longitude:"+p.coords.longitude+"<br/>";
+				}, function(e){
+					console.log('error message: ' + e.message)
+				} );
+    		
+    	}
+    	function getAcc(){
+    		//获取设备的加速度
+    		var acc=document.getElementById("acc");
+    		plus.accelerometer.watchAcceleration( 
+    			function ( a ) {
+					acc.innerText =  "x 加速度:" + a.xAxis + "\ny 加速度:" + a.yAxis + "\nz 加速度:" + a.zAxis;
+				}, 
+				function ( e ) {
+					alert( "Acceleration error: " + e.message ); 
+				} ); 
+    	}
+    	function getNetWork(){
+    		//获取网络状态
+    		var types = {}; 
+			types[plus.networkinfo.CONNECTION_UNKNOW] = "Unknown connection"; 
+			types[plus.networkinfo.CONNECTION_NONE] = "None connection"; 
+			types[plus.networkinfo.CONNECTION_ETHERNET] = "Ethernet connection"; 
+			types[plus.networkinfo.CONNECTION_WIFI] = "WiFi connection"; 
+			types[plus.networkinfo.CONNECTION_CELL2G] = "Cellular 2G connection"; 
+			types[plus.networkinfo.CONNECTION_CELL3G] = "Cellular 3G connection"; 
+			types[plus.networkinfo.CONNECTION_CELL4G] = "Cellular 4G connection"; 
+		
+			alert( "Network: " + types[plus.networkinfo.getCurrentType()] );
+    	}
+    	
+    	function device(){
+//  		 var device=plus.device //设备对象
+    		 var dev=document.getElementById("device");
+    		 dev.onclick=function(){
+    		 	plus.device.dial("99955",false)   //打电话
+    		 	plus.device.beep(3)           //发出蜂鸣声
+    		 }
+    		 dev.innerHTML="设备的国际移动设备身份码 imei:"+plus.device.imei+"<br>";
+    	}
+    </script>
+</head>
+<body>
+	<nav class="mui-bar mui-bar-tab">
+	    <a class="mui-tab-item mui-active" href="#home">
+	        <span class="mui-icon mui-icon-home"></span>
+	        <span class="mui-tab-label">首页</span>
+	    </a>
+	    <a class="mui-tab-item" href="#phone">
+	        <span class="mui-icon mui-icon-phone"></span>
+	        <span class="mui-tab-label">电话</span>
+	    </a>
+	    <a class="mui-tab-item" href="#email">
+	        <span class="mui-icon mui-icon-email"></span>
+	        <span class="mui-tab-label">邮件</span>
+	    </a>
+	    <a class="mui-tab-item" href="#user">
+	        <span class="mui-icon mui-icon-contact"></span>
+	        <span class="mui-tab-label">个人</span>
+	    </a>
+	</nav>
+	
+	
+	<div class="mui-content content" >
+	    <div class="mui-control-content" id="home">
+	    	<header class="mui-bar mui-bar-nav mui-bar-success">
+	    	    <h1 class="mui-title">首页</h1>
+	    	    <ul class="mui-table-view">
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-right" src="">
+	    	                <div class="mui-media-body">
+	    	                    幸福
+	    	                    <p class="mui-ellipsis">能和心爱的人一起睡觉，是件幸福的事情；可是，打呼噜怎么办？</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-right" src="./images/10.png">
+	    	                <div class="mui-media-body">
+	    	                    木屋
+	    	                    <p class="mui-ellipsis">想要这样一间小木屋，夏天挫冰吃瓜，冬天围炉取暖.</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-right" src="./images/25.png">
+	    	                <div class="mui-media-body">
+	    	                    CBD
+	    	                    <p class="mui-ellipsis">烤炉模式的城，到黄昏，如同打翻的调色盘一般.</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	    </ul>
+	    	    <ul class="mui-table-view">
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-left" src="./images/14.png">
+	    	                <div class="mui-media-body">
+	    	                    幸福
+	    	                    <p class="mui-ellipsis">能和心爱的人一起睡觉，是件幸福的事情；可是，打呼噜怎么办？</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-left" src="./images/27.png">
+	    	                <div class="mui-media-body">
+	    	                    木屋
+	    	                    <p class="mui-ellipsis">想要这样一间小木屋，夏天挫冰吃瓜，冬天围炉取暖.</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	        <li class="mui-table-view-cell mui-media">
+	    	            <a href="javascript:;">
+	    	                <img class="mui-media-object mui-pull-left" src="./images/5.png">
+	    	                <div class="mui-media-body">
+	    	                    CBD
+	    	                    <p class="mui-ellipsis">烤炉模式的城，到黄昏，如同打翻的调色盘一般.</p>
+	    	                </div>
+	    	            </a>
+	    	        </li>
+	    	    </ul>
+	    	    <div id="slider" class="mui-slider" >
+	    	      <div class="mui-slider-group mui-slider-loop">
+	    	        <!-- 额外增加的一个节点(循环轮播：第一个节点是最后一张轮播) -->
+	    	        <div class="mui-slider-item mui-slider-item-duplicate">
+	    	          <a href="#">
+	    	            <img src="./images/27.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	        <!-- 第一张 -->
+	    	        <div class="mui-slider-item">
+	    	          <a href="#">
+	    	            <img src="./images/10.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	        <!-- 第二张 -->
+	    	        <div class="mui-slider-item" >
+	    	          <a href="#">
+	    	            <img src="./images/25.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	        <!-- 第三张 -->
+	    	        <div class="mui-slider-item">
+	    	          <a href="#">
+	    	            <img src="./images/14.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	        <!-- 第四张 -->
+	    	        <div class="mui-slider-item">
+	    	          <a href="#">
+	    	            <img src="./images/27.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	        <!-- 额外增加的一个节点(循环轮播：最后一个节点是第一张轮播) -->
+	    	        <div class="mui-slider-item mui-slider-item-duplicate">
+	    	          <a href="#">
+	    	            <img src="./images/10.png" height="200">
+	    	          </a>
+	    	        </div>
+	    	      </div>
+	    	      <div class="mui-slider-indicator">
+	    	        <div class="mui-indicator mui-active"></div>
+	    	        <div class="mui-indicator"></div>
+	    	        <div class="mui-indicator"></div>
+	    	        <div class="mui-indicator"></div>
+	    	      </div>
+	    	    </div>
+	    	</header>
+	    </div>
+	    <div class="mui-control-content" id="phone">
+	    	<header class="mui-bar mui-bar-nav mui-bar-success">
+	    	    <h1 class="mui-title">电话</h1>
+	    	</header>
+	    		<button type="button" class="mui-btn mui-btn-block" onclick='login("qq")'>qq</button>
+				<button type="button" class="mui-btn mui-btn-block mui-btn-primary" onclick='login("weixin")'>微信</button>
+				<button type="button" class="mui-btn mui-btn-block mui-btn-success" onclick='login("sinaweibo")'>新浪</button>
+				<button type="button" class="mui-btn mui-btn-warning" onclick="openaction()">开始分享</button>
+				<button type="button" class="mui-btn mui-btn-primary" onclick="sendShare()">系统组件分享</button>
+				
+				<div id="sheet1" class="mui-popover mui-popover-bottom mui-popover-action ">
+				    <!-- 可选择菜单 -->
+				    <ul class="mui-table-view">
+				      <li class="mui-table-view-cell">
+				        <a onclick="startShare('qq')">分享到QQ</a>
+				      </li>
+				      <li class="mui-table-view-cell">
+				        <a onclick="startShare('weixin')">分享到微信</a>
+				      </li>
+				      <li class="mui-table-view-cell">
+				        <a onclick="startShare('sinaweibo')">分享到新浪微博</a>
+				      </li>
+				    </ul>
+				    <!-- 取消菜单 -->
+				    <ul class="mui-table-view">
+				      <li class="mui-table-view-cell">
+				        <a href="#sheet1"><b>取消</b></a>
+				      </li>
+				    </ul>
+				</div>
+		</div>
+	    <div class="mui-control-content" id="email">
+	    	<header class="mui-bar mui-bar-nav mui-bar-success">
+	    	    <h1 class="mui-title">邮箱</h1>
+	    	</header>
+	    	<div class="mui-card" style="width:100%;padding: 0 10px;box-sizing: border-box;">
+			<div class="mui-card-header mui-card-media">
+				<img src="./images/29.png">
+				<div class="mui-media-body">
+					小M
+					<p>发表于 2016-06-30 15:30</p>
+				</div>
+			</div>
+			<div class="mui-card-content">
+				<img id="img" src="./images/7.png" alt="" width="100%">
+			</div>
+			<div class="mui-card-footer">
+				<a class="mui-card-link">点赞</a>
+				<a class="mui-card-link" onclick="startScan()">扫描二维码</a>
+				<a class="mui-card-link"  onclick="takePhoto()">拍照</a>
+				<div id-"bcid"></div>
+			</div>
+		</div>	
+	    </div>
+	    <div class="mui-control-content" id="user">
+	    	<header class="mui-bar mui-bar-nav mui-bar-success">
+	    	    <h1 class="mui-title">个人</h1>
+	    	</header>
+	    	<div class="mui-card" style="width:100%;padding: 0 10px;box-sizing: border-box;">
+			<div class="mui-card-header mui-card-media">
+				<img src="./images/29.png">
+				<div class="mui-media-body">
+					小M
+					<p>发表于 2016-06-30 15:30</p>
+				</div>
+			</div>
+			<div class="mui-card-content">
+				<div class="box" id="device">获取设备信息</div>
+				<div class="box" id="acc">获取设备的加速度</div>
+				<div class="box" id="geo">获取设备的GPS 地理定位</div>
+			</div>
+			<div class="mui-card-footer">
+				<a class="mui-card-link">点赞</a>
+				<a class="mui-card-link">评论</a>
+				<a class="mui-card-link">阅读</a>
+			</div>
+		</div>
+	    </div>
+	</div>
+	<script type="text/javascript">
+		window.onload=function(){
+			console.log("xxx")
+			location.href="#home"
+		}
+		function openaction(){
+			//点击打开操作表
+			mui('#sheet1').popover('toggle')
+		}
+		
+	</script>
+	
+
+</body>
+</html>
